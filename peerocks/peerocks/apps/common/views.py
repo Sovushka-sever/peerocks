@@ -1,4 +1,5 @@
 import json
+from itertools import chain
 
 from django.shortcuts import (
     render,
@@ -7,6 +8,8 @@ from django.views import (
     View,
 )
 
+from recipes.models import Recipe, UserRecipe, CookStep, RecipeProduct
+
 
 class Task1View(View):
     """
@@ -14,25 +17,41 @@ class Task1View(View):
     """
 
     def get(self, request, **kwargs):
+
+        queryset_recipe_all = Recipe.objects.all()
+        result = []
+        for query in queryset_recipe_all:
+            author = UserRecipe.objects.filter(recipe=query).values_list('user').distinct()
+            result.append((query, list(author)))
+
         data = {
-            'response': 'some data task 1',
+            'response': result,
         }
 
-        return render(request, 'task.html', {'json_data': json.dumps(data)})
+        return render(request, 'task.html', {'json_data': data})
 
 
 class Task2View(View):
     """
     Вывести детальную информацию рецепта. Нужно получить информацию о самом рецепте, о шагах приготовления, списке
-    необходимых продоктов для приготовления
+    необходимых продуктов для приготовления
     """
 
     def get(self, request, **kwargs):
+
+        queryset_cookstep_all = CookStep.objects.all().values_list()
+        queryset_recipeproduct_all = RecipeProduct.objects.all().values_list()
+
+
+        all_list = list(chain(queryset_cookstep_all, queryset_recipeproduct_all))
+
+        # (query1 | query2).distinct()
+
         data = {
-            'response': 'some data task 2',
+            'response': all_list,
         }
 
-        return render(request, 'task.html', {'json_data': json.dumps(data)})
+        return render(request, 'task.html', {'json_data': data})
 
 
 class Task3View(View):
@@ -52,7 +71,7 @@ class Task3View(View):
 class Task4View(View):
     """
     Вывести объединенный список TOP 3 авторов и TOP 3 голосующих с количеством рецептов для первых и количеством
-    голосов для вторых. В выборке должен быть указан тип в отдельной колонкке - Автор или Пользователь.
+    голосов для вторых. В выборке должен быть указан тип в отдельной колонке - Автор или Пользователь.
     """
 
     def get(self, request, **kwargs):
